@@ -42,6 +42,7 @@ class Worker:
         Arguments:
             tnx: Транзакция в которой выполняется запрос
         """
+
         cur = tnx.cursor()
 
         cur.execute("""
@@ -66,6 +67,7 @@ class Worker:
             tnx: Транзакция в которой выполняется запрос
             task_id: Идентификатор задачи
         """
+
         cur = tnx.cursor()
         cur.execute(
             """
@@ -92,6 +94,7 @@ class Worker:
             status_text: Текст статуса завершения. При успешном завершении записываем "OK",
                 в противном случае текст ошибки.
         """
+
         cur = tnx.cursor()
         cur.execute(
             """
@@ -114,6 +117,7 @@ class Worker:
             task_id: Идентификатор задачи
             name: Имя задачи
         """
+
         # выбор случайной задержки
         t = random.randint(1, 4)
         time.sleep(t * 0.01)
