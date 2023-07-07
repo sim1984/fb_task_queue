@@ -263,8 +263,8 @@ def main():
         rows = cur.fetchall()
         cur.close()
 
-        columns = ["ID", "NAME", "STARTED", "WORKER_ID", "START_TIME", "FINISH_TIME",
-                   "FINISH_STATUS", "STATUS_TEXT"]
+        columns = ["ID", "NAME", "STARTED", "WORKER", "START_TIME", "FINISH_TIME",
+                   "STATUS", "STATUS_TEXT"]
 
         table = PrettyTable(columns)
         table.add_rows(rows)

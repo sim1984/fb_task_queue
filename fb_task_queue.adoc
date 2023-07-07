@@ -19,7 +19,7 @@ IBSurgeon 2023
 В эту таблицу постановщики будут добавлять задачи, а исполнители брать свободные задачи и выполнять их.
 Скрипт создания базы данных с комментариями приведён ниже:
 
-[source,sql]
+[source%autofit,sql]
 ----
 CREATE DATABASE 'inet://localhost:3055/c:\fbdata\5.0\queue.fdb'
 USER SYSDBA password 'masterkey'
@@ -56,7 +56,7 @@ COMMENT ON COLUMN QUEUE_TASK.STATUS_TEXT IS 'Текст статуса. Если
 
 Для добавления новой задачи достаточно выполнить оператор
 
-[source,sql]
+[source%autofit,sql]
 ----
 INSERT INTO QUEUE_TASK(NAME) VALUES (?)
 ----
@@ -67,7 +67,7 @@ INSERT INTO QUEUE_TASK(NAME) VALUES (?)
 
 Получить свободную задачу можно с помощью следующего запроса:
 
-[source,sql]
+[source%autofit,sql]
 ----
 SELECT ID, NAME
 FROM QUEUE_TASK
@@ -80,7 +80,7 @@ FETCH FIRST ROW ONLY
 Далее исполнитель помечает задачу как "Взята в обработку", устанавливает время старта задачи и идентификатор исполнителя.
 Это делается запросом:
 
-[source,sql]
+[source%autofit,sql]
 ----
 UPDATE QUEUE_TASK 
 SET 
@@ -94,7 +94,7 @@ WHERE ID = ?
 Когда задача выполнена необходимо установить время завершения задачи и её статус.
 Выполнение задачи может завершиться с ошибкой, в этом случае устанавливается соответсвующий статус и сохраняется текст ошибки.
 
-[source,sql]
+[source%autofit,sql]
 ----
 UPDATE QUEUE_TASK 
 SET 
@@ -110,7 +110,7 @@ WHERE ID = ?
 
 Для написания скрипта нам потребуется установить две библиотеки:
 
-[source,bash]
+[source%autofit,bash]
 ----
 pip install firebird-driver
 pip install prettytable
@@ -120,7 +120,7 @@ pip install prettytable
 его можно запускать и под Linux изменив некоторые константы и путь к библиотеке `fbclient`.
 Сохраним написанный скрипт его в файл `queue_exec.py`:
 
-[source,python]
+[source%autofit,python]
 ----
 #!/usr/bin/python3
 
@@ -380,8 +380,8 @@ def main():
         rows = cur.fetchall()
         cur.close()
 
-        columns = ["ID", "NAME", "STARTED", "WORKER_ID", "START_TIME", "FINISH_TIME",
-                   "FINISH_STATUS", "STATUS_TEXT"]
+        columns = ["ID", "NAME", "STARTED", "WORKER", "START_TIME", "FINISH_TIME",
+                   "STATUS", "STATUS_TEXT"]
 
         table = PrettyTable(columns)
         table.add_rows(rows)
@@ -399,7 +399,7 @@ if __name__ == "__main__":
 
 Попробуем запустит наш скрипт:
 
-[source,bash]
+[source%autofit,bash]
 ----
 python ./queue_exec.py
 ----
@@ -459,13 +459,13 @@ Statistics:
 +-------+--------------+----------------+---------+-------+------------------+------------------+-----------+
 
 Tasks:
-+------+---------+---------+-----------+--------------------------+--------------------------+---------------+-------------+
-|  ID  |   NAME  | STARTED | WORKER_ID |         START_TIME       |        FINISH_TIME       | FINISH_STATUS | STATUS_TEXT |
-+------+---------+---------+-----------+--------------------------+--------------------------+---------------+-------------+
-| 1341 |  Task 1 |   True  |     0     | 2023-07-06 15:35:29.9800 | 2023-07-06 15:35:30.0320 |       1       |  Some error |
-| 1342 |  Task 2 |   True  |     0     | 2023-07-06 15:35:30.0420 | 2023-07-06 15:35:30.0800 |       1       |  Some error |
-| 1343 |  Task 3 |   True  |     0     | 2023-07-06 15:35:30.0900 | 2023-07-06 15:35:30.1130 |       0       |      OK     |
-| 1344 |  Task 4 |   True  |     0     | 2023-07-06 15:35:30.1220 | 2023-07-06 15:35:30.1450 |       0       |      OK     |
++------+---------+---------+--------+--------------------------+--------------------------+--------+-------------+
+|  ID  |   NAME  | STARTED | WORKER |         START_TIME       |        FINISH_TIME       | STATUS | STATUS_TEXT |
++------+---------+---------+--------+--------------------------+--------------------------+--------+-------------+
+| 1341 |  Task 1 |   True  |   0    | 2023-07-06 15:35:29.9800 | 2023-07-06 15:35:30.0320 |    1   |  Some error |
+| 1342 |  Task 2 |   True  |   0    | 2023-07-06 15:35:30.0420 | 2023-07-06 15:35:30.0800 |    1   |  Some error |
+| 1343 |  Task 3 |   True  |   0    | 2023-07-06 15:35:30.0900 | 2023-07-06 15:35:30.1130 |    0   |      OK     |
+| 1344 |  Task 4 |   True  |   0    | 2023-07-06 15:35:30.1220 | 2023-07-06 15:35:30.1450 |    0   |      OK     |
 ...
 ----
 
@@ -481,6 +481,7 @@ Tasks:
 Она может применяться в запросах, в которых есть вероятность возникновения конфликта обновления,
 то есть в запросах `SELECT ... WITH LOCK`, `UPDATE` и `DELETE`. Посмотрим на её синтаксис:
 
+[%autofit]
 ----
 SELECT
   [FIRST ...]
@@ -494,6 +495,7 @@ SELECT
   [WITH LOCK [SKIP LOCKED]]
 ----
 
+[%autofit]
 ----
 UPDATE <sometable>
   SET ...
@@ -505,6 +507,7 @@ UPDATE <sometable>
   [RETURNING ...]
 ----
 
+[%autofit]
 ----
 DELETE FROM <sometable>
   [WHERE ...]
@@ -521,7 +524,7 @@ DELETE FROM <sometable>
 
 Для этого нам необходимо немного переписать запрос в методе `__next_task` класса `Worker`.
 
-[source,python]
+[source%autofit,python]
 ----
     @staticmethod
     def __next_task(tnx: TransactionManager):
@@ -549,7 +552,7 @@ DELETE FROM <sometable>
 
 Попробуем запустит исправленный скрипт:
 
-[source,bash]
+[source%autofit,bash]
 ----
 python ./queue_exec.py
 ----
@@ -566,16 +569,16 @@ Statistics:
 +-------+--------------+----------------+---------+-------+------------------+------------------+-----------+
 
 Tasks:
-+------+---------+---------+-----------+--------------------------+--------------------------+---------------+-------------+
-|  ID  |   NAME  | STARTED | WORKER_ID |         START_TIME       |        FINISH_TIME       | FINISH_STATUS | STATUS_TEXT |
-+------+---------+---------+-----------+--------------------------+--------------------------+---------------+-------------+
-| 1381 |  Task 1 |   True  |     0     | 2023-07-06 15:57:22.0360 | 2023-07-06 15:57:22.0740 |       0       |      OK     |
-| 1382 |  Task 2 |   True  |     0     | 2023-07-06 15:57:22.0840 | 2023-07-06 15:57:22.1130 |       0       |      OK     |
-| 1383 |  Task 3 |   True  |     0     | 2023-07-06 15:57:22.1220 | 2023-07-06 15:57:22.1630 |       0       |      OK     |
-| 1384 |  Task 4 |   True  |     0     | 2023-07-06 15:57:22.1720 | 2023-07-06 15:57:22.1910 |       0       |      OK     |
-| 1385 |  Task 5 |   True  |     0     | 2023-07-06 15:57:22.2020 | 2023-07-06 15:57:22.2540 |       0       |      OK     |
-| 1386 |  Task 6 |   True  |     0     | 2023-07-06 15:57:22.2620 | 2023-07-06 15:57:22.3220 |       0       |      OK     |
-| 1387 |  Task 7 |   True  |     0     | 2023-07-06 15:57:22.3300 | 2023-07-06 15:57:22.3790 |       1       |  Some error |
++------+---------+---------+--------+--------------------------+--------------------------+--------+-------------+
+|  ID  |   NAME  | STARTED | WORKER |         START_TIME       |        FINISH_TIME       | STATUS | STATUS_TEXT |
++------+---------+---------+--------+--------------------------+--------------------------+--------+-------------+
+| 1381 |  Task 1 |   True  |   0    | 2023-07-06 15:57:22.0360 | 2023-07-06 15:57:22.0740 |   0    |      OK     |
+| 1382 |  Task 2 |   True  |   0    | 2023-07-06 15:57:22.0840 | 2023-07-06 15:57:22.1130 |   0    |      OK     |
+| 1383 |  Task 3 |   True  |   0    | 2023-07-06 15:57:22.1220 | 2023-07-06 15:57:22.1630 |   0    |      OK     |
+| 1384 |  Task 4 |   True  |   0    | 2023-07-06 15:57:22.1720 | 2023-07-06 15:57:22.1910 |   0    |      OK     |
+| 1385 |  Task 5 |   True  |   0    | 2023-07-06 15:57:22.2020 | 2023-07-06 15:57:22.2540 |   0    |      OK     |
+| 1386 |  Task 6 |   True  |   0    | 2023-07-06 15:57:22.2620 | 2023-07-06 15:57:22.3220 |   0    |      OK     |
+| 1387 |  Task 7 |   True  |   0    | 2023-07-06 15:57:22.3300 | 2023-07-06 15:57:22.3790 |   1    |  Some error |
 ...
 ----
 
@@ -614,7 +617,7 @@ Select Expression
 выполняют их, то количество не начатых задач всегда меньше, количества завершённых, таким образом,
 этот индекс будет эффективно фильтровать задачи. Проверим это утверждение:
 
-[source,sql]
+[source%autofit,sql]
 ----
 CREATE INDEX IDX_QUEUE_TASK_INACTIVE ON QUEUE_TASK(STARTED);
 
@@ -627,6 +630,7 @@ FETCH FIRST ROW ONLY
 FOR UPDATE WITH LOCK SKIP LOCKED;
 ----
 
+[%autofit]
 ----
 Select Expression
     -> First N Records
@@ -642,13 +646,14 @@ Select Expression
 
 Можно пойти дальше и создать композитный индекс:
 
-[source,sql]
+[source%autofit,sql]
 ----
 DROP INDEX IDX_QUEUE_TASK_INACTIVE;
 
 CREATE INDEX IDX_QUEUE_TASK_INACTIVE ON QUEUE_TASK(STARTED, ID);
 ----
 
+[%autofit]
 ----
 Select Expression
     -> First N Records
@@ -664,6 +669,7 @@ Select Expression
 Для решения этой проблемы можно задействовать ещё одну новую возможность из Firebird 5.0,
 так называемые частичные индексы.
 
+[quote]
 ____
 
 Частичный индекс — это индекс, который строится по подмножеству строк таблицы, определяемому условным
@@ -674,7 +680,7 @@ ____
 
 Давайте попробуем построить такой индекс:
 
-[source,sql]
+[source%autofit,sql]
 ----
 DROP INDEX IDX_QUEUE_TASK_INACTIVE;
 
@@ -689,6 +695,7 @@ FETCH FIRST ROW ONLY
 FOR UPDATE WITH LOCK SKIP LOCKED
 ----
 
+[%autofit]
 ----
 Select Expression
     -> First N Records
