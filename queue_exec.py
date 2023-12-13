@@ -18,8 +18,8 @@ DB_USER = 'SYSDBA'
 DB_PASSWORD = 'masterkey'
 DB_CHARSET = 'UTF8'
 
-WORKERS_COUNT = 4  # Количество исполнителей
-WORKS_COUNT = 40   # Количество задач
+WORKERS_COUNT = 4  # Number of Executors
+WORKS_COUNT = 40   # Number of Tasks
 
 # set up logging to console
 stream_handler = logging.StreamHandler()
@@ -30,17 +30,17 @@ logging.basicConfig(level=logging.DEBUG,
 
 
 class Worker:
-    """Класс Worker представляет собой исполнителя задачи"""
+    """Class Worker is am executor"""
 
     def __init__(self, worker_id: int):
         self.worker_id = worker_id
 
     @staticmethod
     def __next_task(tnx: TransactionManager):
-        """Извлекает следующую задачу из очереди.
+        """Retrieves the next task from the queue.
 
         Arguments:
-            tnx: Транзакция в которой выполняется запрос
+            tnx: The transaction in which the request is executed
         """
 
         cur = tnx.cursor()
@@ -59,13 +59,13 @@ class Worker:
         return row
 
     def __on_start_task(self, tnx: TransactionManager, task_id: int) -> None:
-        """Срабатывает при старте выполнения задачи.
+        """Fires when task execution starts.
 
-        Устанавливает задаче признак того, что она запущена и время старта.
+        Sets the flag to the task to indicate that it is running, and sets the start time of the task.
 
         Arguments:
-            tnx: Транзакция в которой выполняется запрос
-            task_id: Идентификатор задачи
+            tnx: The transaction in which the request is executed
+            task_id: Task ID
         """
 
         cur = tnx.cursor()
@@ -83,16 +83,16 @@ class Worker:
 
     @staticmethod
     def __on_finish_task(tnx: TransactionManager, task_id: int, status: int, status_text: str) -> None:
-        """Срабатывает при завершении выполнения задачи.
+        """Fires when a task completes.
 
-        Устанавливает задаче время завершения и статус с которым завершилась задача.
+        Sets the task completion time and the status with which the task completed.
 
         Arguments:
-            tnx: Транзакция в которой выполняется запрос
-            task_id: Идентификатор задачи
-            status: Код статуса завершения. 0 - успешно, 1 - завершено с ошибкой
-            status_text: Текст статуса завершения. При успешном завершении записываем "OK",
-                в противном случае текст ошибки.
+            tnx: The transaction in which the query is executed
+            task_id: Task ID
+            status: Completion status code. 0 - successful, 1 - completed with error
+            status_text: Completion status text. If successful, write "OK",
+                otherwise the error text.
         """
 
         cur = tnx.cursor()
@@ -109,37 +109,37 @@ class Worker:
         )
 
     def on_task_execute(self, task_id: int, name: str) -> None:
-        """Этот метод приведён как пример функции выполнения некоторой задачи.
+        """This method is given as an example of a function to perform some task.
 
-        В реальных задачах он будет другим и с другим набором параметров.
+        In real problems it could be different and with a different set of parameters.
 
         Arguments:
-            task_id: Идентификатор задачи
-            name: Имя задачи
+            task_id: Task ID
+            name: Task Name
         """
 
-        # выбор случайной задержки
+        # let get random delay
         t = random.randint(1, 4)
         time.sleep(t * 0.01)
-        # для демонстрации того, что задача может выполняться с ошибками,
-        # генерируем исключение для двух из случайных чисел.
+        # to demonstrate that a task can be performed with errors,
+        # let's generate an exception for two of the random numbers.
         if t == 3:
             raise Exception("Some error")
 
     def run(self) -> int:
-        """Выполнение задачи"""
+        """Task Execution"""
         conflict_counter = 0
-        # Для параллельного выполнения каждый поток должен иметь своё соединение с БД.
+        # For parallel execution, each thread must have its own connection to the database.
         with connect(DB_URI, user=DB_USER, password=DB_PASSWORD, charset=DB_CHARSET) as con:
             tnx = con.transaction_manager(tpb(Isolation.SNAPSHOT, lock_timeout=0, access_mode=TraAccessMode.WRITE))
             while True:
-                # Извлекаем очередную задачу и ставим ей признак того что она выполняется.
-                # Поскольку задача может выполниться с ошибкой, то признак старта задачи
-                # выставляем в отдельной транзакции.
+                # We extract the next outstanding task and give it a sign that it is being executed.
+                # Since the task may be executed with an error, the task start sign
+                # is set in the separate transaction.
                 tnx.begin()
                 try:
                     task_row = self.__next_task(tnx)
-                    # Если задачи закончились завершаем поток
+                    # If the tasks are finished, we terminate the thread
                     if task_row is None:
                         tnx.commit()
                         break
@@ -155,19 +155,19 @@ class Worker:
                     tnx.rollback()
                     continue
 
-                # Выполняем задачу
+                # Execute task
                 status = 0
                 status_text = "OK"
                 try:
                     self.on_task_execute(task_id, name)
                 except Exception as err:
-                    # Если при выполнении возникла ошибка,
-                    # то ставим соответствующий код статуса и сохраняем текст ошибки.
+                    # If an error occurs during execution,
+                    # then set the appropriate status code and save the error text.
                     status = 1
                     status_text = f"{err}"
                     # logging.error(status_text)
 
-                # Сохраняем время завершения задачи и записываем статус её завершения.
+                # We save the task completion time and record its completion status.
                 tnx.begin()
                 try:
                     self.__on_finish_task(tnx, task_id, status, status_text)
@@ -187,12 +187,12 @@ def main():
     print(f"Start execute script. Works: {WORKS_COUNT}, workers: {WORKERS_COUNT}\n")
 
     with connect(DB_URI, user=DB_USER, password=DB_PASSWORD, charset=DB_CHARSET) as con:
-        # Чистим предыдущие задачи
+        # Clean previous tasks from the queue
         con.begin()
         with con.cursor() as cur:
             cur.execute("DELETE FROM QUEUE_TASK")
         con.commit()
-        # Постановщик ставит 40 задач
+        # Task Manager sets 40 tasks
         con.begin()
         with con.cursor() as cur:
             cur.execute(
@@ -214,14 +214,14 @@ def main():
             )
         con.commit()
 
-    # создаём исполнителей
+    # Let's create executors
     workers = map(lambda worker_id: Worker(worker_id), range(WORKERS_COUNT))
     with pool.ProcessPoolExecutor(max_workers=WORKERS_COUNT) as executer:
         features = map(lambda worker: executer.submit(worker.run), workers)
         conflicts = map(lambda feature: feature.result(), pool.as_completed(features))
         conflict_count = sum(conflicts)
 
-    # считаем статистику
+    # read statistics
     with connect(DB_URI, user=DB_USER, password=DB_PASSWORD, charset=DB_CHARSET) as con:
         cur = con.cursor()
         cur.execute("""
