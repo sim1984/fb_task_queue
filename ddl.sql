@@ -5,7 +5,7 @@ DEFAULT CHARACTER SET UTF8;
 CREATE DOMAIN D_QUEUE_TASK_STATUS
 AS SMALLINT CHECK(VALUE IN (0, 1));
 
-COMMENT ON DOMAIN D_QUEUE_TASK_STATUS IS 'Статус завершения задачи';
+COMMENT ON DOMAIN D_QUEUE_TASK_STATUS IS 'Task completion status';
 
 
 CREATE TABLE QUEUE_TASK (
@@ -20,14 +20,14 @@ CREATE TABLE QUEUE_TASK (
   CONSTRAINT PK_QUEUE_TASK PRIMARY KEY(ID)
 );
 
-COMMENT ON TABLE QUEUE_TASK IS 'Очередь задач';
-COMMENT ON COLUMN QUEUE_TASK.ID IS 'Идентификатор задачи';
-COMMENT ON COLUMN QUEUE_TASK.NAME IS 'Имя задачи';
-COMMENT ON COLUMN QUEUE_TASK.STARTED IS 'Признак того что задача взята в обработку';
-COMMENT ON COLUMN QUEUE_TASK.WORKER_ID IS 'Идентификатор исполнителя задачи';
-COMMENT ON COLUMN QUEUE_TASK.START_TIME IS 'Время начала выполнения задачи';
-COMMENT ON COLUMN QUEUE_TASK.FINISH_TIME IS 'Время завершения выполнения задачи';
-COMMENT ON COLUMN QUEUE_TASK.FINISH_STATUS IS 'Статус с которым завершилось выполнение задачи 0 - успешно, 1 - с ошибкой';
-COMMENT ON COLUMN QUEUE_TASK.STATUS_TEXT IS 'Текст статуса. Если задача выполнена без ошибок, то "OK", иначе текст ошибки';
+COMMENT ON TABLE QUEUE_TASK IS 'Task queue';
+COMMENT ON COLUMN QUEUE_TASK.ID IS 'Task Identifier';
+COMMENT ON COLUMN QUEUE_TASK.NAME IS 'Task Name';
+COMMENT ON COLUMN QUEUE_TASK.STARTED IS 'Flag that the task has been accepted for processing';
+COMMENT ON COLUMN QUEUE_TASK.WORKER_ID IS 'ID of Executor';
+COMMENT ON COLUMN QUEUE_TASK.START_TIME IS 'Task execution time start';
+COMMENT ON COLUMN QUEUE_TASK.FINISH_TIME IS 'Task execution time finish';
+COMMENT ON COLUMN QUEUE_TASK.FINISH_STATUS IS 'The status with which the task completed 0 - successfully, 1 - with error';
+COMMENT ON COLUMN QUEUE_TASK.STATUS_TEXT IS 'Status text. If the task is completed without errors, then "OK", otherwise the error text';
 
 -- CREATE INDEX IDX_QUEUE_TASK_INACTIVE ON QUEUE_TASK(STARTED, ID) WHERE(STARTED IS FALSE);
